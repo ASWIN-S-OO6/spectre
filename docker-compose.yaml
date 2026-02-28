@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  spectre:
+    build: .
+    container_name: spectre
+    privileged: true
+    ports:
+      - "7777:7777"
+    volumes:
+      - ./reports:/opt/spectre/reports
+      - ./wordlists:/opt/spectre/wordlists
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    network_mode: "bridge"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1

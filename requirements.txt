@@ -1,0 +1,12 @@
+flask>=3.0.0
+flask-socketio>=5.3.0
+gevent>=24.2.1
+gevent-websocket>=0.10.1
+litellm>=1.0.0
+python-tornet==2.2.1
+mcp>=1.0.0
+fastmcp>=0.1.0
+requests>=2.31.0
+rich>=13.7.0
+stem>=1.8.1
+PySocks>=1.7.1

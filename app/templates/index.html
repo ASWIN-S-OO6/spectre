@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Spectre</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Top Bar ── */
+        #topbar {
+            background: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #30363d;
+            flex-shrink: 0;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        #topbar .title {
+            color: #58a6ff;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #topbar .status {
+            font-size: 12px;
+            color: #8b949e;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            background: rgba(48, 54, 61, 0.4);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+        }
+
+        #topbar .status .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .dot-red {
+            background: #ff4444;
+            box-shadow: 0 0 5px #ff4444;
+        }
+
+        .dot-green {
+            background: #00ff41;
+            box-shadow: 0 0 5px #00ff41;
+        }
+
+        /* ── API Key Screen ── */
+        #api-screen {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #161b22 0%, #0d1117 100%);
+            font-family: 'Inter', sans-serif;
+        }
+
+        #api-screen.hidden {
+            display: none;
+        }
+
+        .api-box {
+            background: rgba(22, 27, 34, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid #30363d;
+            border-radius: 16px;
+            padding: 40px;
+            width: 480px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .api-box h1 {
+            color: #00ff41;
+            font-size: 28px;
+            margin-bottom: 8px;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        .api-box p {
+            color: #8b949e;
+            font-size: 13px;
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            color: #c9d1d9;
+            font-size: 12px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .api-box input[type="password"],
+        .api-box select {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            color: #00ff41;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .api-box input:focus,
+        .api-box select:focus {
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0d1117;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            margin-bottom: 24px;
+        }
+
+        .toggle-container span {
+            font-size: 14px;
+            color: #c9d1d9;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #30363d;
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #c9d1d9;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #00ff41;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+            background-color: #0d1117;
+        }
+
+        .api-box button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #238636, #2ea043);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+
+        .api-box button:hover {
+            box-shadow: 0 4px 15px rgba(35, 134, 54, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* ── Terminal Screen ── */
+        #terminal-screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #terminal-screen.active {
+            display: flex;
+        }
+
+        #output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.6;
+            text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        #output::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #output::-webkit-scrollbar-track {
+            background: #0d1117;
+            border-left: 1px solid #30363d;
+        }
+
+        #output::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 5px;
+            border: 2px solid #0d1117;
+        }
+
+        /* ── Input Bar ── */
+        #input-bar {
+            background: rgba(22, 27, 34, 0.95);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #30363d;
+            flex-shrink: 0;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #input-bar .prompt {
+            color: #00ff41;
+            font-weight: bold;
+            font-size: 14px;
+            margin-right: 12px;
+            white-space: nowrap;
+        }
+
+        #input-bar input {
+            flex: 1;
+            padding: 10px 14px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #input-bar input:focus {
+            border-color: #58a6ff;
+        }
+
+        #input-bar button {
+            margin-left: 12px;
+            padding: 10px 24px;
+            background: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #input-bar button:hover {
+            background: #2ea043;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div id="topbar">
+        <span class="title">🛡️ Spectre — Advanced Terminal</span>
+        <span class="status">
+            <div class="status-item">
+                <span class="dot dot-red" id="dot-ai"></span><span id="s-ai">AI: Disconnected</span>
+            </div>
+            <div class="status-item" id="tor-status-container" style="display: none;">
+                <span class="dot dot-red" id="dot-tor"></span> Tor: <span id="s-tor">Off</span>
+            </div>
+        </span>
+    </div>
+
+    <!-- API Key Screen -->
+    <div id="api-screen">
+        <div class="api-box">
+            <h1>🛡️ Spectre</h1>
+            <p>Configure your intelligence provider and preferences.</p>
+
+            <div class="input-group">
+                <label>AI Provider</label>
+                <select id="api-provider">
+                    <option value="gemini">Google Gemini (Default)</option>
+                    <option value="openai">OpenAI (GPT-4o)</option>
+                    <option value="groq">Groq (Llama3)</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>API Key</label>
+                <input type="password" id="api-key-input" placeholder="Paste your API key here..." autofocus>
+            </div>
+
+            <div class="toggle-container">
+                <span>Enable Agent Mode (AI Parsing)</span>
+                <label class="switch">
+                    <input type="checkbox" id="agent-mode-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <button id="api-submit-btn">🚀 Initialize Workstation</button>
+        </div>
+    </div>
+
+    <!-- Terminal Screen -->
+    <div id="terminal-screen">
+        <div id="output"></div>
+        <div id="input-bar">
+            <span class="prompt">spectre@kali:~$</span>
+            <input type="text" id="cmd-input" placeholder="Type a command or describe what you want..."
+                autocomplete="off">
+            <button id="cmd-send-btn">▶ Run</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const outputEl = document.getElementById('output');
+        const apiScreen = document.getElementById('api-screen');
+        const termScreen = document.getElementById('terminal-screen');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const apiProvider = document.getElementById('api-provider');
+        const agentModeToggle = document.getElementById('agent-mode-toggle');
+        const apiSubmitBtn = document.getElementById('api-submit-btn');
+        const cmdInput = document.getElementById('cmd-input');
+        const cmdSendBtn = document.getElementById('cmd-send-btn');
+
+        const dotAi = document.getElementById('dot-ai');
+        const sAi = document.getElementById('s-ai');
+        const torStatusContainer = document.getElementById('tor-status-container');
+        const dotTor = document.getElementById('dot-tor');
+        const sTor = document.getElementById('s-tor');
+
+        let history = [];
+        let historyIndex = -1;
+
+        // ── Socket events ──
+        socket.on('output', (data) => {
+            appendOutput(data.text, data.color || '#c9d1d9');
+        });
+
+        socket.on('authenticated', (data) => {
+            if (data.ok) {
+                apiScreen.classList.add('hidden');
+                termScreen.classList.add('active');
+                cmdInput.focus();
+                dotAi.className = 'dot dot-green';
+                const providerName = apiProvider.options[apiProvider.selectedIndex].text.split(' ')[0];
+                const modeStr = agentModeToggle.checked ? 'Agent' : 'Shell';
+                sAi.textContent = `${providerName} (${modeStr})`;
+                torStatusContainer.style.display = 'flex'; // Show Tor status once logged in
+            }
+        });
+
+        socket.on('clear', () => {
+            outputEl.innerHTML = '';
+        });
+
+        // ── TorNet IP Updates ──
+        socket.on('tor_ip_update', (data) => {
+            if (data.status === 'Off') {
+                dotTor.className = 'dot dot-red';
+                sTor.textContent = 'Off';
+            } else {
+                dotTor.className = 'dot dot-green';
+                // Flashing animation for IP change
+                sTor.style.opacity = '0';
+                setTimeout(() => {
+                    sTor.innerHTML = `<strong>${data.ip}</strong> <span style="font-size: 10px; color: #58a6ff;">(${data.status})</span>`;
+                    sTor.style.opacity = '1';
+                    sTor.style.transition = 'opacity 0.3s ease-in';
+                }, 150);
+            }
+        });
+
+        // ── API key submission ──
+        apiSubmitBtn.addEventListener('click', submitApiKey);
+        apiKeyInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitApiKey();
+        });
+
+        function submitApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (!key && agentModeToggle.checked) {
+                alert("Please enter an API Key to use Agent Mode.");
+                return;
+            }
+            apiSubmitBtn.textContent = '⏳ Initializing...';
+            apiSubmitBtn.disabled = true;
+
+            socket.emit('set_api_key', {
+                key: key,
+                provider: apiProvider.value,
+                agent_mode: agentModeToggle.checked
+            });
+
+            setTimeout(() => {
+                apiSubmitBtn.textContent = '🚀 Initialize Workstation';
+                apiSubmitBtn.disabled = false;
+            }, 5000);
+        }
+
+        // ── Command submission ──
+        cmdSendBtn.addEventListener('click', sendCommand);
+        cmdInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                sendCommand();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    cmdInput.value = history[history.length - 1 - historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    cmdInput.value = history[history.length - 1 - historyIndex];
+                } else {
+                    historyIndex = -1;
+                    cmdInput.value = '';
+                }
+            }
+        });
+
+        function sendCommand() {
+            const cmd = cmdInput.value.trim();
+            if (!cmd) return;
+            history.push(cmd);
+            historyIndex = -1;
+            cmdInput.value = '';
+            socket.emit('command', { cmd: cmd });
+        }
+
+        // ── Output rendering ──
+        function appendOutput(text, color) {
+            const span = document.createElement('span');
+            span.style.color = color;
+            span.textContent = text.replace(/\r\n/g, '\n');
+            outputEl.appendChild(span);
+            // Smooth scroll to bottom
+            outputEl.scrollTo({ top: outputEl.scrollHeight, behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>
