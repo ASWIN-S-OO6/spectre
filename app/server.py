@@ -120,12 +120,14 @@ def handle_api_key(data):
         send_output("[✓] All Kali tools loaded.\r\n", color="#00ff41", terminal_id=terminal_id)
         send_output("[✓] Tor/Proxychains ready (type 'toron').\r\n", color="#58a6ff", terminal_id=terminal_id)
         send_output("\r\nType 'help' for commands.\r\n\r\n", color="#888888", terminal_id=terminal_id)
-        emit("authenticated", {"ok": True}, room=terminal_id)
+        emit("authenticated", {"ok": True}, room=request.sid)
         
         send_system_log("success", "System", f"Workstation connected successfully to {g_hostname}. AI Provider: {provider}")
     except Exception as e:
-        send_output(f"[✗] Initialization error: {type(e).__name__} \r\n", color="#ff4444", terminal_id=terminal_id)
+        err_msg = f"{type(e).__name__}: {str(e)}"
+        send_output(f"[✗] Initialization error: {err_msg} \r\n", color="#ff4444", terminal_id=terminal_id)
         send_system_log("error", "Boot", f"Failed to mount core terminal dependencies. Traceback: {str(e)}")
+        emit("authenticated", {"ok": False, "error": err_msg}, room=request.sid)
 
 @socketio.on("toggle_agent_mode")
 def handle_toggle_agent_mode(data):
@@ -206,31 +208,34 @@ def _execute(cmd: str, term_id: str):
             terminal.save_session_log()
             send_system_log("info", "Shell", "Session log saved.")
 
-        # ── Tor commands ──
         elif command == "toron":
             interval = int(args) if args.isdigit() else 2
-            terminal.enable_anonymity(auto_rotate_interval=interval)
+            terminal.enable_anonymity(auto_rotate_interval=interval, terminal_id=term_id)
             send_system_log("info", "Tor", f"Tor enabled with auto-rotate interval: {interval}s")
 
         elif command == "toroff":
-            terminal.disable_anonymity()
+            terminal.disable_anonymity(terminal_id=term_id)
             send_system_log("info", "Tor", "Tor disabled.")
 
         elif command == "newip":
             terminal.tor.new_identity()
+            send_output("[*] Requested new Tor identity.\r\n", "#58a6ff", term_id)
             send_system_log("info", "Tor", "Requested new Tor identity.")
 
         elif command == "torstatus":
             terminal.tor.status()
+            send_output("[*] Checked Tor status pool.\r\n", "#58a6ff", term_id)
             send_system_log("info", "Tor", "Checked Tor status.")
 
         elif command == "autorotate":
             secs = int(args) if args.isdigit() else 2
             terminal.tor.auto_rotate(interval=secs)
+            send_output(f"[*] Set auto-rotate interal to {secs}s\r\n", "#58a6ff", term_id)
             send_system_log("info", "Tor", f"Tor auto-rotate interval set to {secs}s.")
 
         elif command == "stoprotate":
             terminal.tor.stop_auto_rotate()
+            send_output("[*] Stopped auto-rotate.\r\n", "#58a6ff", term_id)
             send_system_log("info", "Tor", "Tor auto-rotate stopped.")
 
         elif command == "myip":
@@ -327,9 +332,9 @@ def _execute(cmd: str, term_id: str):
                     send_system_log("info", "AIEngine", f"AI interpreted action: {action} on target: {target}")
                     modules[action].execute(target, lambda text, color="#c9d1d9": send_output(text, color, term_id))
                 elif action == "shell" and interp.get("shell_cmd"):
-                    terminal.run(interp["shell_cmd"])
+                    terminal.run(interp["shell_cmd"], terminal_id=term_id)
             elif interp.get("shell_cmd"):
-                terminal.run(interp["shell_cmd"])
+                terminal.run(interp["shell_cmd"], terminal_id=term_id)
             else:
                 send_output("[*] Could not map to action. Try 'help'.\r\n", "#888888")
 

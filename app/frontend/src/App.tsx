@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Typography, Input, Button, Select, Switch, Space, Form, ConfigProvider, theme, Tooltip } from 'antd';
+import { Typography, Input, Button, Select, Switch, Space, Form, ConfigProvider, theme, Tooltip, message } from 'antd';
 import { SendOutlined, SafetyOutlined, RobotOutlined, CodeOutlined, GlobalOutlined, DesktopOutlined, SettingOutlined } from '@ant-design/icons';
 import { io, Socket } from 'socket.io-client';
 
@@ -60,11 +60,14 @@ const App: React.FC = () => {
       setOutputs(prev => [...prev, data]);
     });
 
-    newSocket.on('authenticated', (data: { ok: boolean }) => {
+    newSocket.on('authenticated', (data: { ok: boolean, error?: string }) => {
       if (data.ok) {
         setIsAuthenticated(true);
         setIsSettingsOpen(false);
         setIsInitializing(false);
+      } else {
+        setIsInitializing(false);
+        message.error(`Workstation Connection Failed: ${data.error || 'Unknown Error'}`, 5);
       }
     });
 
@@ -399,7 +402,7 @@ const App: React.FC = () => {
               onClick={() => focusTerminal(term.id)}
               style={{
                 position: 'absolute',
-                top: term.isMaximized ? 28 : `calc(5% + ${cascadeOffset}px)`,
+                top: term.isMaximized ? '68px' : `calc(85px + ${cascadeOffset}px)`,
                 left: term.isMaximized ? 0 : `calc(10% + ${cascadeOffset}px)`,
                 right: term.isMaximized ? 0 : '10%',
                 bottom: term.isMaximized ? 0 : '12%',
@@ -536,7 +539,7 @@ const App: React.FC = () => {
 
                 <Form.Item label={<Text style={{ color: '#cbd5e1' }}>Intelligence Provider</Text>} name="provider">
                   <Select size="large">
-                    <Select.Option value="gemini">Google Gemini 2.0</Select.Option>
+                    <Select.Option value="gemini">Google Gemini 2.5</Select.Option>
                     <Select.Option value="openai">OpenAI GPT-4o</Select.Option>
                     <Select.Option value="groq">Groq Llama 3</Select.Option>
                   </Select>

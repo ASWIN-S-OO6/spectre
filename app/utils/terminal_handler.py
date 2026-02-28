@@ -30,12 +30,13 @@ class TerminalHandler:
         self._auto_rotate_thread = None
         self._stop_rotate_event = threading.Event()
 
-    def enable_anonymity(self, auto_rotate_interval=60):
+    def enable_anonymity(self, auto_rotate_interval=60, terminal_id=None):
+        target_tid = terminal_id or self.terminal_id
         if tornet is None:
-            self.out("[ANON] ✗ 'tornet' package is not installed.\r\n", "#ff4444")
+            self.out("[ANON] ✗ 'tornet' package is not installed.\r\n", "#ff4444", terminal_id=target_tid)
             return
             
-        self.out("\r\n[ANON] ═══ Enabling Tor Anonymity via TorNet ═══\r\n", "#ff79c6")
+        self.out("\r\n[ANON] ═══ Enabling Tor Anonymity via TorNet ═══\r\n", "#ff79c6", terminal_id=target_tid)
         try:
             # We initialize locally, which spins up tor
             tornet.initialize_environment()
@@ -45,7 +46,7 @@ class TerminalHandler:
             ip = None
             
             for attempt in range(max_retries):
-                self.out(f"[ANON] Attaching to Tor circuit (Attempt {attempt + 1}/{max_retries})... \r\n", "#8be9fd", terminal_id=self.terminal_id)
+                self.out(f"[ANON] Attaching to Tor circuit (Attempt {attempt + 1}/{max_retries})... \r\n", "#8be9fd", terminal_id=target_tid)
                 time.sleep(3)
                 ip = tornet.get_current_ip()
                 if ip:
@@ -53,16 +54,16 @@ class TerminalHandler:
             
             if ip:
                 self.anonymity_enabled = True
-                self.out(f"[ANON] ✓ Tor active. Exit IP: {ip}\r\n", "#00ff41", terminal_id=self.terminal_id)
+                self.out(f"[ANON] ✓ Tor active. Exit IP: {ip}\r\n", "#00ff41", terminal_id=target_tid)
                 if self.emit:
                     self.emit("tor_ip_update", {"ip": ip, "status": "On (Shared)"})
 
                 if auto_rotate_interval > 0:
                     self._start_auto_rotate(auto_rotate_interval)
             else:
-                self.out("[ANON] ✗ TorNet timed out fetching IP. Please click again.\r\n", "#ff4444", terminal_id=self.terminal_id)
+                self.out("[ANON] ✗ TorNet timed out fetching IP. Please click again.\r\n", "#ff4444", terminal_id=target_tid)
         except Exception as e:
-            self.out(f"[ANON] ✗ TorNet error: {e}\r\n", "#ff4444", terminal_id=self.terminal_id)
+            self.out(f"[ANON] ✗ TorNet error: {e}\r\n", "#ff4444", terminal_id=target_tid)
 
     def _start_auto_rotate(self, interval):
         self.stop_auto_rotate()
@@ -89,12 +90,13 @@ class TerminalHandler:
             self._auto_rotate_thread.join(timeout=2)
             self._auto_rotate_thread = None
 
-    def disable_anonymity(self):
+    def disable_anonymity(self, terminal_id=None):
+        target_tid = terminal_id or self.terminal_id
         self.stop_auto_rotate()
         if tornet:
             tornet.stop_services()
         self.anonymity_enabled = False
-        self.out("[ANON] ✓ Direct connection restored\r\n", "#ffaa00")
+        self.out("[ANON] ✓ Direct connection restored\r\n", "#ffaa00", terminal_id=target_tid)
         if self.emit:
             self.emit("tor_ip_update", {"ip": "Direct", "status": "Off"})
 
