@@ -20,7 +20,7 @@ The fastest and most stable way to run Spectre is via Docker.
 
 **1. Clone the repository**
 ```bash
-git clone https://github.com/yourusername/spectre.git
+git clone https://github.com/ASWIN-S-OO6/spectre.git
 cd spectre
 ```
 
